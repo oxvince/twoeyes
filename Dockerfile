@@ -5,9 +5,57 @@ COPY package*.json ./
 RUN npm install
 COPY . .
 
-# 修复 .browserslistrc
-RUN node -e "const fs = require('fs'); const content = fs.readFileSync('.browserslistrc', 'utf8'); console.log('原内容:', content); const fixed = content.split('\n').filter(function(line){ return !line.includes('not supports es6-module'); }).join('\n'); fs.writeFileSync('.browserslistrc', fixed); console.log('修复后:', fs.readFileSync('.browserslistrc', 'utf8'));"
+# 用硬编码版本替换 Seo.tsx，去掉触发 SSR bug 的 useStaticQuery
+RUN cat > src/components/Seo/Seo.tsx << 'EOF'
+import React from "react";
+import PropTypes from "prop-types";
+import { Helmet } from "react-helmet";
 
-ENV GATSBY_EXPERIMENTAL_DISABLE_SSR_DURING_BUILD=true
+type SeoProps = {
+  description?: string;
+  lang?: string;
+  meta?: ({ property?: string; content: string; name?: string } | undefined | null)[];
+};
+
+const Seo: React.FC<SeoProps> = ({ description = "", lang = "en", meta = [] }) => {
+  const siteMetadata = {
+    title: "twoeyes",
+    description: "Restoring binocular vision",
+    author: "artelydev",
+  };
+  const metaDescription = description || siteMetadata.description;
+  const defaultMetaData: object[] = [
+    { name: `description`, content: metaDescription },
+    { property: `og:title`, content: "twoeyes | become binocular" },
+    { property: `og:description`, content: metaDescription },
+    { property: `og:type`, content: `website` },
+    { name: `twitter:card`, content: `summary` },
+    { name: `twitter:creator`, content: siteMetadata.author },
+    { name: `twitter:title`, content: "twoeyes | become binocular" },
+    { name: `twitter:description`, content: metaDescription },
+  ];
+  return (
+    <Helmet
+      htmlAttributes={{ lang }}
+      title="twoeyes | become binocular"
+      meta={defaultMetaData.concat(meta)}
+    />
+  );
+};
+
+Seo.propTypes = {
+  description: PropTypes.string,
+  lang: PropTypes.string,
+  meta: PropTypes.arrayOf(
+    PropTypes.shape({
+      property: PropTypes.string,
+      name: PropTypes.string,
+      content: PropTypes.string.isRequired,
+    }),
+  ),
+};
+
+export default Seo;
+EOF
 
 RUN npx gatsby clean && npx gatsby build
