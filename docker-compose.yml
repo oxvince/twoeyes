@@ -6,6 +6,6 @@ services:
     platform: linux/amd64
     container_name: twoeyes-builder
     volumes:
-      - /nginx/www/twoeyes:/output
+      - /root/nginx/www/twoeyes:/output
     # 启动时把构建产物从镜像复制到 volume
     command: ["sh", "-c", "cp -r /app/public/. /output/"]
