@@ -3,11 +3,7 @@ FROM --platform=linux/amd64 node:14-bullseye
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
+# 强制升级 gatsby 到修复了此 bug 的最后一个 v3 版本
+RUN npm install gatsby@3.15.0 --save
 COPY . .
-RUN npx gatsby clean
-
-# GATSBY_EXPERIMENTAL_PAGE_BUILD_ON_DATA_CHANGES 和 DEV_SSR 都不管用
-# 用 GATSBY_CPU_COUNT 限制并发，同时关闭 SSR bundle 检查
-ENV GATSBY_EXPERIMENTAL_DISABLE_SSR_DURING_BUILD=true
-
-RUN npx gatsby build
+RUN npx gatsby clean && npx gatsby build
