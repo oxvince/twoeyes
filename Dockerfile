@@ -3,7 +3,21 @@ FROM --platform=linux/amd64 node:14-bullseye
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
-# 强制升级 gatsby 到修复了此 bug 的最后一个 v3 版本
-RUN npm install gatsby@3.15.0 --save
 COPY . .
+
+# 修复 .browserslistrc 中不兼容的语法
+RUN node -e "
+const fs = require('fs');
+const content = fs.readFileSync('.browserslistrc', 'utf8');
+console.log('原内容:', content);
+const fixed = content
+  .split('\n')
+  .filter(line => !line.includes('not supports es6-module'))
+  .join('\n');
+fs.writeFileSync('.browserslistrc', fixed);
+console.log('修复后:', fs.readFileSync('.browserslistrc', 'utf8'));
+"
+
+ENV GATSBY_EXPERIMENTAL_DISABLE_SSR_DURING_BUILD=true
+
 RUN npx gatsby clean && npx gatsby build
