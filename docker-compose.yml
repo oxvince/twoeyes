@@ -1,12 +1,10 @@
-services:
-  twoeyes-builder:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    platform: linux/amd64
-    container_name: twoeyes-builder
-    volumes:
-      # 构建产物输出到宿主机这个目录
-      - /nginx/www/twoeyes:/app/public
-    # 构建完自动退出，不常驻
-    command: ["npx", "gatsby", "build"]
+FROM --platform=linux/amd64 node:14-bullseye
+
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+COPY Seo.patched.tsx src/components/Seo/Seo.tsx
+RUN npx gatsby clean && npx gatsby build
+
+CMD ["sh", "-c", "cp -r /app/public/. /output/"]
